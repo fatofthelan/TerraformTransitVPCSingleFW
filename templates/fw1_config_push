@@ -1,0 +1,42 @@
+#!/bin/bash
+### Check for firewall up ###
+while true
+do
+  echo "${fw1_mgmt_ip}" >> /tmp/pan.log
+  resp=$(curl -vvv -s -S -g --insecure "https://${fw1_mgmt_ip}")
+  exit_code=$?
+  if [ $exit_code -ne 0 ] ; then
+    echo "Continuing.." >> pan.log
+    echo "Continuing because exit code not 0"
+  else
+    echo "Breaking out because exit code is 0"
+    break
+  fi
+  echo "Response $exit_code"
+  sleep 10s
+done
+for i in `seq 1 48`
+do
+sleep 5
+echo "Mandatory wait for api access... "
+done
+echo "Exiting.."
+exit 0
+
+
+### Generate API Key ###
+### curl -k -X GET 'https://${fw1_mgmt_ip}/api/?type=keygen&user=paloalto&password=in*4ksh8JN2kdh'
+
+### Import Full Config ###
+curl -k --form file=@templates/transit_fw1_config.xml 'https://${fw1_mgmt_ip}/api/?type=import&category=configuration&key=LUFRPT1DTE1nSTdaaUhJS3ZSZXVWMk1SaFYvdW1CalE9ZHhLNktMRVBndzRVT2RvVjNOWXBGZjF0Z29hYmp0OTd2VDZ2VmNWc216TT0='
+
+### Load New Config ###
+curl -k 'https://${fw1_mgmt_ip}/api/?type=op&cmd=<load><config><from>transit_fw1_config.xml</from></config></load>&key=LUFRPT1DTE1nSTdaaUhJS3ZSZXVWMk1SaFYvdW1CalE9ZHhLNktMRVBndzRVT2RvVjNOWXBGZjF0Z29hYmp0OTd2VDZ2VmNWc216TT0='
+
+### Enter PSK for Tunnel 1 ###
+curl -v -g -k "https://${fw1_mgmt_ip}/api/?type=config&action=set&xpath=/config/devices/entry[@name='localhost.localdomain']/network/ike/gateway/entry[@name='aws-transit-gateway-01']/authentication/pre-shared-key&element=<key>${tunnel1_preshared_key}</key>&key=LUFRPT1DTE1nSTdaaUhJS3ZSZXVWMk1SaFYvdW1CalE9ZHhLNktMRVBndzRVT2RvVjNOWXBGZjF0Z29hYmp0OTd2VDZ2VmNWc216TT0="
+### Enter PSK for Tunnel 2 ###
+curl -v -g -k "https://${fw1_mgmt_ip}/api/?type=config&action=set&xpath=/config/devices/entry[@name='localhost.localdomain']/network/ike/gateway/entry[@name='aws-transit-gateway-02']/authentication/pre-shared-key&element=<key>${tunnel2_preshared_key}</key>&key=LUFRPT1DTE1nSTdaaUhJS3ZSZXVWMk1SaFYvdW1CalE9ZHhLNktMRVBndzRVT2RvVjNOWXBGZjF0Z29hYmp0OTd2VDZ2VmNWc216TT0="
+
+### Commit Changes to FW ###
+curl -k 'https://${fw1_mgmt_ip}/api/?type=commit&cmd=<commit></commit>&key=LUFRPT1DTE1nSTdaaUhJS3ZSZXVWMk1SaFYvdW1CalE9ZHhLNktMRVBndzRVT2RvVjNOWXBGZjF0Z29hYmp0OTd2VDZ2VmNWc216TT0='
