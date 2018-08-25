@@ -44,3 +44,16 @@ resource "local_file" "fw1_config_push" {
   content  = "${data.template_file.fw1_config_push.rendered}"
   filename = "templates/fw1_config_push.sh"
 }
+
+
+/* Check that Firewall 1 is up and push the rendered configs */
+resource "null_resource" "fw1_check_and_push" {
+  depends_on = ["aws_vpn_gateway_route_propagation.spoke_route_propagation", "local_file.fw1_config_push"]
+  triggers {
+    key = "${aws_instance.palo_alto_fw_1.id}"
+  }
+
+  provisioner "local-exec" {
+    command = "templates/fw1_config_push.sh"
+  }
+}
