@@ -29,11 +29,8 @@ This is the first draft of the AWS Transit VPC/Subscribing VPC Terraform templat
   terraform init
   terraform apply
   ```
-- After the template runs, you will see the firewall's IP as well as the PSKs for the VPNs.
-- Log in to the firewall and import/load the firewall's configuration file from the templates
-  directory. __DO NOT COMMIT YET__. Go to the Network tab, IKE Gateways, and open each entry and enter
-  the PSKs from the Terraform output. (I'll automate this in v2.)
-- Commit and you should all of the VPN tunnels become active as well as their BGP entries.
+- After the template runs, you will see the firewall's IP as well as the IP's/commands to access the Bastion Hosts.
+
 
 #### NOTES:
 - The username and password from the bootstrap.xml is __paloalto__ / __in*4ksh8JN2kdh__ (be sure to change this once your FWs come up!)

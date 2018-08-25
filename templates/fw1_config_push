@@ -22,6 +22,7 @@ echo "Waiting for Firewall 1 API to start... "
 done
 
 ### Push configuration to Firewall 1, load it to the candidate config, push IKE Gateway PSK's, and commit ###
+### Thanks, Kyle Creason for the API help ###
 
 ### Generate API Key - Not needed if using included config template ###
 ### curl -k -X GET 'https://${fw1_mgmt_ip}/api/?type=keygen&user=paloalto&password=in*4ksh8JN2kdh'
