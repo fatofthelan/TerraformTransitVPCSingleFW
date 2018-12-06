@@ -1,11 +1,11 @@
 /* Create a bastion host for testing */
 
 resource "aws_instance" "spoke_host" {
-  ami             = "${data.aws_ami.amazon-linux-2.id}"
-  instance_type   = "t2.micro"
-  security_groups = ["${aws_security_group.spoke_host_sg.id}"]
-  key_name        = "transit_vpc_key"
-  subnet_id       = "${aws_subnet.spoke_vpc_subnet_az1.id}"
+  ami                         = "${data.aws_ami.amazon-linux-2.id}"
+  instance_type               = "t2.micro"
+  security_groups             = ["${aws_security_group.spoke_host_sg.id}"]
+  key_name                    = "transit_vpc_key"
+  subnet_id                   = "${aws_subnet.spoke_vpc_subnet_az1.id}"
   associate_public_ip_address = true
 
   tags {

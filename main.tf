@@ -109,7 +109,7 @@ resource "aws_route" "transit_default_route" {
 resource "aws_route" "trust_default_route" {
   route_table_id         = "${aws_route_table.trust_route_table.id}"
   destination_cidr_block = "0.0.0.0/0"
-  network_interface_id           = "${aws_network_interface.firewall_1_trust_network_interface.id}"
+  network_interface_id   = "${aws_network_interface.firewall_1_trust_network_interface.id}"
 }
 
 /* Associate transit subnets with transit routes */

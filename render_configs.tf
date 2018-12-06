@@ -28,15 +28,14 @@ resource "local_file" "transit_fw1_config" {
   filename = "templates/transit_fw1_config.xml"
 }
 
-
 data "template_file" "fw1_config_push" {
   template   = "${file("templates/fw1_config_push")}"
   depends_on = ["aws_vpn_gateway_route_propagation.spoke_route_propagation"]
 
   vars {
-    fw1_mgmt_ip  = "${aws_eip.firewall_1_management_public_ip.public_ip}"
-    tunnel1_preshared_key       = "${aws_vpn_connection.spoke_to_transit_fw1.tunnel1_preshared_key}"
-    tunnel2_preshared_key       = "${aws_vpn_connection.spoke_to_transit_fw1.tunnel2_preshared_key}"
+    fw1_mgmt_ip           = "${aws_eip.firewall_1_management_public_ip.public_ip}"
+    tunnel1_preshared_key = "${aws_vpn_connection.spoke_to_transit_fw1.tunnel1_preshared_key}"
+    tunnel2_preshared_key = "${aws_vpn_connection.spoke_to_transit_fw1.tunnel2_preshared_key}"
   }
 }
 
@@ -45,10 +44,10 @@ resource "local_file" "fw1_config_push" {
   filename = "templates/fw1_config_push.sh"
 }
 
-
 /* Check that Firewall 1 is up and push the rendered configs */
 resource "null_resource" "fw1_check_and_push" {
   depends_on = ["aws_vpn_gateway_route_propagation.spoke_route_propagation", "local_file.fw1_config_push"]
+
   triggers {
     key = "${aws_instance.palo_alto_fw_1.id}"
   }

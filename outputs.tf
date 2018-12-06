@@ -1,4 +1,3 @@
-
 output "Firewall 1 Management URL" {
   value = "${join("", list("https://", "${aws_eip.firewall_1_management_public_ip.public_ip}"))}"
 }
@@ -46,3 +45,4 @@ output "Tunnel 1 Virtual Gateway Outside IP (FW1-ike-gw1-peer-address)" {
 }
 
 */
+
