@@ -1,14 +1,14 @@
 /* Create a keypair to use for our instances */
 resource "aws_key_pair" "transit_vpc_key" {
   key_name   = "transit_vpc_key"
-  public_key = "${file(var.transit_key_pair_public)}"
+  public_key = file(var.transit_key_pair_public)
 }
 
 /* This section creates the networks elements of the transit VPC */
 
 /* Create the VPC */
 resource "aws_vpc" "transit_vpc" {
-  cidr_block = "${var.transit_vpc_cidr_block}"
+  cidr_block = var.transit_vpc_cidr_block
 
   tags = {
     "Name"    = "transit-vpc"
@@ -18,11 +18,11 @@ resource "aws_vpc" "transit_vpc" {
 
 /* Create the first transit VPC untrust subnet */
 resource "aws_subnet" "transit_vpc_untrust_subnet_az1" {
-  vpc_id            = "${aws_vpc.transit_vpc.id}"
-  cidr_block        = "${join("", list("${var.transit_vpc_cidr_prefix}", "1.0/24"))}"
-  availability_zone = "${data.aws_availability_zones.available.names[0]}"
+  vpc_id            = aws_vpc.transit_vpc.id
+  cidr_block        = join("", [var.transit_vpc_cidr_prefix, "1.0/24"])
+  availability_zone = data.aws_availability_zones.available.names[0]
 
-  tags {
+  tags = {
     "Name"    = "transit-untrust-subnet-az1"
     "Network" = "untrust-transit"
   }
@@ -30,11 +30,11 @@ resource "aws_subnet" "transit_vpc_untrust_subnet_az1" {
 
 /* Create the first transit VPC trust subnet */
 resource "aws_subnet" "transit_vpc_trust_subnet_az1" {
-  vpc_id            = "${aws_vpc.transit_vpc.id}"
-  cidr_block        = "${join("", list("${var.transit_vpc_cidr_prefix}", "10.0/24"))}"
-  availability_zone = "${data.aws_availability_zones.available.names[0]}"
+  vpc_id            = aws_vpc.transit_vpc.id
+  cidr_block        = join("", [var.transit_vpc_cidr_prefix, "10.0/24"])
+  availability_zone = data.aws_availability_zones.available.names[0]
 
-  tags {
+  tags = {
     "Name"    = "transit-trust-subnet-az1"
     "Network" = "trust-transit"
   }
@@ -42,9 +42,9 @@ resource "aws_subnet" "transit_vpc_trust_subnet_az1" {
 
 /* Create the Internet Gateway for the transit VPC */
 resource "aws_internet_gateway" "transit_internet_gateway" {
-  vpc_id = "${aws_vpc.transit_vpc.id}"
+  vpc_id = aws_vpc.transit_vpc.id
 
-  tags {
+  tags = {
     "Network" = "untrust-transit"
     "Name"    = "transit-igw"
   }
@@ -52,111 +52,119 @@ resource "aws_internet_gateway" "transit_internet_gateway" {
 
 /* Create the Elastic IPs for the firewall 1 manage and untrust interfaces */
 resource "aws_eip" "firewall_1_management_public_ip" {
-  vpc        = true
-  depends_on = ["aws_vpc.transit_vpc", "aws_internet_gateway.transit_internet_gateway", "aws_network_interface.firewall_1_management_network_interface"]
+  vpc = true
+  depends_on = [
+    aws_vpc.transit_vpc,
+    aws_internet_gateway.transit_internet_gateway,
+    aws_network_interface.firewall_1_management_network_interface,
+  ]
 
-  tags {
+  tags = {
     "Name" = "firewall_1_managment_ip"
   }
 }
 
 resource "aws_eip" "firewall_1_untrust_public_ip" {
-  vpc        = true
-  depends_on = ["aws_vpc.transit_vpc", "aws_internet_gateway.transit_internet_gateway", "aws_network_interface.firewall_1_untrust_network_interface"]
+  vpc = true
+  depends_on = [
+    aws_vpc.transit_vpc,
+    aws_internet_gateway.transit_internet_gateway,
+    aws_network_interface.firewall_1_untrust_network_interface,
+  ]
 
-  tags {
+  tags = {
     "Name" = "firewall_1_untrust_ip"
   }
 }
 
 /* Associate the Elastic IPs to the internal network interfaces */
 resource "aws_eip_association" "firewall_1_management_eip_association" {
-  network_interface_id = "${aws_network_interface.firewall_1_management_network_interface.id}"
-  allocation_id        = "${aws_eip.firewall_1_management_public_ip.id}"
+  network_interface_id = aws_network_interface.firewall_1_management_network_interface.id
+  allocation_id        = aws_eip.firewall_1_management_public_ip.id
 }
 
 resource "aws_eip_association" "firewall_1_untrust_eip_association" {
-  network_interface_id = "${aws_network_interface.firewall_1_untrust_network_interface.id}"
-  allocation_id        = "${aws_eip.firewall_1_untrust_public_ip.id}"
+  network_interface_id = aws_network_interface.firewall_1_untrust_network_interface.id
+  allocation_id        = aws_eip.firewall_1_untrust_public_ip.id
 }
 
 /* Create the transit VPC main route table */
 resource "aws_route_table" "transit_route_table" {
-  vpc_id = "${aws_vpc.transit_vpc.id}"
+  vpc_id = aws_vpc.transit_vpc.id
 
-  tags {
+  tags = {
     "Name" = "Transit-Untrust"
   }
 }
 
 /* Create the transit VPC trust route table */
 resource "aws_route_table" "trust_route_table" {
-  vpc_id = "${aws_vpc.transit_vpc.id}"
+  vpc_id = aws_vpc.transit_vpc.id
 
-  tags {
+  tags = {
     "Name" = "Transit-Trust"
   }
 }
 
 /* Create the default route for the transit VPC, points to the IGW */
 resource "aws_route" "transit_default_route" {
-  route_table_id         = "${aws_route_table.transit_route_table.id}"
+  route_table_id         = aws_route_table.transit_route_table.id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = "${aws_internet_gateway.transit_internet_gateway.id}"
+  gateway_id             = aws_internet_gateway.transit_internet_gateway.id
 }
 
 /* Create the default route for the trust network that points to the FW's eth2 (Trust zone) */
 resource "aws_route" "trust_default_route" {
-  route_table_id         = "${aws_route_table.trust_route_table.id}"
+  route_table_id         = aws_route_table.trust_route_table.id
   destination_cidr_block = "0.0.0.0/0"
-  network_interface_id   = "${aws_network_interface.firewall_1_trust_network_interface.id}"
+  network_interface_id   = aws_network_interface.firewall_1_trust_network_interface.id
 }
 
 /* Associate transit subnets with transit routes */
 resource "aws_route_table_association" "transit_assc_untrust_subnet_az1" {
-  subnet_id      = "${aws_subnet.transit_vpc_untrust_subnet_az1.id}"
-  route_table_id = "${aws_route_table.transit_route_table.id}"
+  subnet_id      = aws_subnet.transit_vpc_untrust_subnet_az1.id
+  route_table_id = aws_route_table.transit_route_table.id
 }
 
 /* Associate transit subnets with transit routes */
 resource "aws_route_table_association" "trust_assc_trust_subnet_az1" {
-  subnet_id      = "${aws_subnet.transit_vpc_trust_subnet_az1.id}"
-  route_table_id = "${aws_route_table.trust_route_table.id}"
+  subnet_id      = aws_subnet.transit_vpc_trust_subnet_az1.id
+  route_table_id = aws_route_table.trust_route_table.id
 }
 
 /* Network interfaces for firewall 1 */
 resource "aws_network_interface" "firewall_1_management_network_interface" {
-  subnet_id         = "${aws_subnet.transit_vpc_untrust_subnet_az1.id}"
-  security_groups   = ["${aws_security_group.allow_all_security_group.id}"]
+  subnet_id         = aws_subnet.transit_vpc_untrust_subnet_az1.id
+  security_groups   = [aws_security_group.allow_all_security_group.id]
   source_dest_check = false
   private_ips_count = 1
-  private_ips       = ["${join("", list("${var.transit_vpc_cidr_prefix}", "1.10"))}"]
+  private_ips       = [join("", [var.transit_vpc_cidr_prefix, "1.10"])]
 
-  tags {
+  tags = {
     "Name" = "firewall_1_mgmt-port"
   }
 }
 
 resource "aws_network_interface" "firewall_1_untrust_network_interface" {
-  subnet_id         = "${aws_subnet.transit_vpc_untrust_subnet_az1.id}"
-  security_groups   = ["${aws_security_group.allow_all_security_group.id}"]
+  subnet_id         = aws_subnet.transit_vpc_untrust_subnet_az1.id
+  security_groups   = [aws_security_group.allow_all_security_group.id]
   source_dest_check = false
   private_ips_count = 1
-  private_ips       = ["${join("", list("${var.transit_vpc_cidr_prefix}", "1.20"))}"]
+  private_ips       = [join("", [var.transit_vpc_cidr_prefix, "1.20"])]
 
-  tags {
+  tags = {
     "Name" = "firewall_1_eth1/1"
   }
 }
 
 resource "aws_network_interface" "firewall_1_trust_network_interface" {
-  subnet_id         = "${aws_subnet.transit_vpc_trust_subnet_az1.id}"
-  security_groups   = ["${aws_security_group.allow_all_security_group.id}"]
+  subnet_id         = aws_subnet.transit_vpc_trust_subnet_az1.id
+  security_groups   = [aws_security_group.allow_all_security_group.id]
   source_dest_check = false
   private_ips_count = 1
-  private_ips       = ["${join("", list("${var.transit_vpc_cidr_prefix}", "10.20"))}"]
+  private_ips       = [join("", [var.transit_vpc_cidr_prefix, "10.20"])]
 
-  tags {
+  tags = {
     "Name" = "firewall_1_eth1/2"
   }
 }
@@ -165,7 +173,7 @@ resource "aws_network_interface" "firewall_1_trust_network_interface" {
 resource "aws_security_group" "allow_all_security_group" {
   name        = "allow_all_security_group"
   description = "Allow all traffic"
-  vpc_id      = "${aws_vpc.transit_vpc.id}"
+  vpc_id      = aws_vpc.transit_vpc.id
 
   ingress {
     from_port   = "0"
@@ -184,46 +192,46 @@ resource "aws_security_group" "allow_all_security_group" {
 
 /* Create S3 bucket for bootstrap files */
 resource "aws_s3_bucket" "bootstrap_bucket" {
-  bucket        = "${var.bootstrap_bucket}"
+  bucket        = var.bootstrap_bucket
   acl           = "private"
   force_destroy = true
 
-  tags {
+  tags = {
     Name = "Bootstrap Bucket"
   }
 }
 
 /* Upload bootstrap files to the S3 Bucket above */
 resource "aws_s3_bucket_object" "bootstrap_xml" {
-  bucket = "${aws_s3_bucket.bootstrap_bucket.id}"
+  bucket = aws_s3_bucket.bootstrap_bucket.id
   acl    = "private"
   key    = "config/bootstrap.xml"
   source = "bootstrap_files/bootstrap.xml"
 }
 
 resource "aws_s3_bucket_object" "init-cft_txt" {
-  bucket = "${aws_s3_bucket.bootstrap_bucket.id}"
+  bucket = aws_s3_bucket.bootstrap_bucket.id
   acl    = "private"
   key    = "config/init-cfg.txt"
   source = "bootstrap_files/init-cfg.txt"
 }
 
 resource "aws_s3_bucket_object" "software" {
-  bucket = "${aws_s3_bucket.bootstrap_bucket.id}"
+  bucket = aws_s3_bucket.bootstrap_bucket.id
   acl    = "private"
   key    = "software/"
   source = "/dev/null"
 }
 
 resource "aws_s3_bucket_object" "license" {
-  bucket = "${aws_s3_bucket.bootstrap_bucket.id}"
+  bucket = aws_s3_bucket.bootstrap_bucket.id
   acl    = "private"
   key    = "license/"
   source = "/dev/null"
 }
 
 resource "aws_s3_bucket_object" "content" {
-  bucket = "${aws_s3_bucket.bootstrap_bucket.id}"
+  bucket = aws_s3_bucket.bootstrap_bucket.id
   acl    = "private"
   key    = "content/"
   source = "/dev/null"
@@ -234,10 +242,10 @@ resource "aws_s3_bucket_object" "content" {
 /* Create the first firewall */
 resource "aws_instance" "palo_alto_fw_1" {
   disable_api_termination              = false
-  iam_instance_profile                 = "${aws_iam_instance_profile.firewall_bootstrap_profile.name}"
+  iam_instance_profile                 = aws_iam_instance_profile.firewall_bootstrap_profile.name
   instance_initiated_shutdown_behavior = "stop"
   ebs_optimized                        = true
-  ami                                  = "${var.palo_alto_fw_ami[var.aws_region]}"
+  ami                                  = var.palo_alto_fw_ami[var.aws_region]
   instance_type                        = "m4.xlarge"
 
   ebs_block_device {
@@ -251,29 +259,34 @@ resource "aws_instance" "palo_alto_fw_1" {
   monitoring = false
 
   lifecycle {
-    ignore_changes = ["ebs_block_device"]
+    ignore_changes = [ebs_block_device]
   }
 
-  tags {
+  tags = {
     "Name" = "Transit-FW01"
   }
 
   network_interface {
     device_index         = 0
-    network_interface_id = "${aws_network_interface.firewall_1_management_network_interface.id}"
+    network_interface_id = aws_network_interface.firewall_1_management_network_interface.id
   }
 
   network_interface {
     device_index         = 1
-    network_interface_id = "${aws_network_interface.firewall_1_untrust_network_interface.id}"
+    network_interface_id = aws_network_interface.firewall_1_untrust_network_interface.id
   }
 
   network_interface {
     device_index         = 2
-    network_interface_id = "${aws_network_interface.firewall_1_trust_network_interface.id}"
+    network_interface_id = aws_network_interface.firewall_1_trust_network_interface.id
   }
 
-  user_data = "${base64encode(join("", list("vmseries-bootstrap-aws-s3bucket=", var.bootstrap_bucket)))}"
+  user_data = base64encode(
+    join(
+      "",
+      ["vmseries-bootstrap-aws-s3bucket=", var.bootstrap_bucket],
+    ),
+  )
 }
 
 /* Create the roles and policies to permit the firewall to bootstrap */
@@ -294,11 +307,12 @@ resource "aws_iam_role" "firewall_bootstrap_role" {
   ]
 }
 EOF
+
 }
 
 resource "aws_iam_role_policy" "firewall_bootstrap_policy" {
   name = "firewall_bootstrap_policy"
-  role = "${aws_iam_role.firewall_bootstrap_role.id}"
+  role = aws_iam_role.firewall_bootstrap_role.id
 
   policy = <<EOF
 {
@@ -317,10 +331,12 @@ resource "aws_iam_role_policy" "firewall_bootstrap_policy" {
   ]
 }
 EOF
+
 }
 
 resource "aws_iam_instance_profile" "firewall_bootstrap_profile" {
   name = "firewall_bootstrap_profile"
-  role = "${aws_iam_role.firewall_bootstrap_role.name}"
+  role = aws_iam_role.firewall_bootstrap_role.name
   path = "/"
 }
+
