@@ -25,6 +25,11 @@ output "Spoke_Host_Private_IP_Address" {
   description = "Spoke Host Private IP Address"
 }
 
+output "Firewall_Credentials" {
+  value       = "Username/Password: paloalto/in*4ksh8JN2kdh"
+  description = "Firewall Credentials"
+}
+
 /* Debugging Outputs - Uncomment if needed.
 
 output "FW1_Tunnel_1_Pre_Shared_Key" {
