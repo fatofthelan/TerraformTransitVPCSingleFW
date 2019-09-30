@@ -245,7 +245,7 @@ resource "aws_instance" "palo_alto_fw_1" {
   iam_instance_profile                 = aws_iam_instance_profile.firewall_bootstrap_profile.name
   instance_initiated_shutdown_behavior = "stop"
   ebs_optimized                        = true
-  ami                                  = var.palo_alto_fw_ami[var.aws_region]
+  ami                                  = data.aws_ami.palo_alto_fw_ami.id
   instance_type                        = "m4.xlarge"
 
   ebs_block_device {
@@ -339,4 +339,3 @@ resource "aws_iam_instance_profile" "firewall_bootstrap_profile" {
   role = aws_iam_role.firewall_bootstrap_role.name
   path = "/"
 }
-
