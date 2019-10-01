@@ -1,4 +1,4 @@
-output "Firewall_1M-anagement_URL" {
+output "Firewall_1_Management_URL" {
   value = join(
     "",
     [

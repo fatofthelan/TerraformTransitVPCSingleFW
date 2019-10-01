@@ -56,7 +56,7 @@ variable "transit_vpc_cidr_prefix" {
   default = "10.10."
 }
 
-/* This section specifies what license typt and version of the Palo Alto Networks Firewall to use. */
+/* This section specifies what license type and version of the Palo Alto Networks Firewall to use. */
 
 /* Change the default value below to change what version of PANOS to use. */
 variable "panos_version" {
