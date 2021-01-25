@@ -1,5 +1,6 @@
 ### AWS Transit VPC (and Spoke VPC) Terraform Template
-This is the first draft of the AWS Transit VPC/Subscribing VPC Terraform templates.
+Welcome to my example of the AWS Transit VPC/Subscribing VPC Terraform templates.
+![Network Diagram](Transit-VPC-Network-Diagram.jpg "Network Diagram")
 
 #### This Terraform template will:
 - Create the Transit VPC and Subscribing (Spokes) VPCs.
@@ -30,7 +31,6 @@ This is the first draft of the AWS Transit VPC/Subscribing VPC Terraform templat
   terraform apply
   ```
 - After the template runs, you will see the firewall's IP as well as the IP's/commands to access the Bastion Hosts.
-
 
 #### NOTES:
 - The username and password from the bootstrap.xml is __paloalto__ / __in*4ksh8JN2kdh__ (be sure to change this once your FWs come up!)
